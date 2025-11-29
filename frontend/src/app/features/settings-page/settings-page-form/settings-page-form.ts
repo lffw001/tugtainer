@@ -1,13 +1,14 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   computed,
+  effect,
   inject,
-  input,
   output,
+  resource,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormArray,
@@ -18,13 +19,15 @@ import {
   Validators,
 } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { catchError, finalize, of } from 'rxjs';
+import { catchError, finalize, firstValueFrom, map, of } from 'rxjs';
 import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
 import {
   ESettingKey,
+  ESettingSortIndex,
   ESettingValueType,
   ISetting,
   ISettingUpdate,
+  ITestNotificationRequestBody,
 } from 'src/app/entities/settings/settings-interface';
 import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
 import cronValidate from 'cron-validate';
@@ -37,6 +40,8 @@ import { NgTemplateOutlet } from '@angular/common';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ToastService } from 'src/app/core/services/toast.service';
+import { IftaLabelModule } from 'primeng/iftalabel';
+import { TextareaModule } from 'primeng/textarea';
 
 @Component({
   selector: 'app-settings-page-form',
@@ -51,6 +56,8 @@ import { ToastService } from 'src/app/core/services/toast.service';
     NgTemplateOutlet,
     AutoCompleteModule,
     ToggleButtonModule,
+    IftaLabelModule,
+    TextareaModule,
   ],
   templateUrl: './settings-page-form.html',
   styleUrl: './settings-page-form.scss',
@@ -60,23 +67,45 @@ export class SettingsPageForm {
   private readonly settingsApiService = inject(SettingsApiService);
   private readonly translateService = inject(TranslateService);
   private readonly toastService = inject(ToastService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
 
   public readonly OnSubmit = output<ISettingUpdate[]>();
-  public readonly includeKeys = input<ESettingKey[]>();
-  public readonly excludeKeys = input<ESettingKey[]>();
 
   public readonly ESettingKey = ESettingKey;
   public readonly keyTranslates = this.translateService.instant('SETTINGS.BY_KEY');
   public readonly isLoading = signal<boolean>(false);
   public readonly formArray = new FormArray<FormGroup<TInterfaceToForm<ISetting>>>([]);
 
-  private readonly timezones = toSignal(
-    this.settingsApiService.getAvailableTimezones().pipe(catchError(() => of([]))),
-  );
+  private readonly timezones = resource({
+    loader: () =>
+      firstValueFrom(
+        this.settingsApiService.getAvailableTimezones().pipe(
+          catchError((error) => {
+            this.toastService.error(error);
+            return of([]);
+          }),
+        ),
+      ),
+    defaultValue: [],
+  });
+
+  private readonly settings = resource({
+    loader: () =>
+      firstValueFrom(
+        this.settingsApiService.list().pipe(
+          map((res) => res.sort((a, b) => ESettingSortIndex[a.key] - ESettingSortIndex[b.key])),
+          catchError((error) => {
+            this.toastService.error(error);
+            return of([]);
+          }),
+        ),
+      ),
+    defaultValue: [],
+  });
 
   public readonly timezonesSearch = signal<string>(null);
   public readonly displayedTimezones = computed<string[]>(() => {
-    const timezones = this.timezones();
+    const timezones = this.timezones.value();
     let search = this.timezonesSearch();
     if (!search) {
       return timezones;
@@ -97,63 +126,23 @@ export class SettingsPageForm {
   private timezoneValidator: ValidatorFn = (control: AbstractControl<string>) => {
     const value = control.value;
     if (!!value) {
-      const timezones = this.timezones();
+      const timezones = this.timezones.value();
       const valid = !timezones.length || timezones.includes(value);
       return valid ? null : { timezoneValidator: true };
     }
     return null;
   };
 
-  private urlValidator: ValidatorFn = (control: AbstractControl<string>) => {
-    const value = control.value;
-    if (!!value) {
-      try {
-        new URL(value);
-        return null;
-      } catch {
-        return { urlValidator: true };
-      }
-    }
-    return null;
-  };
-
   constructor() {
-    this.updateSettings();
-  }
-
-  private updateSettings(): void {
-    this.isLoading.set(true);
-    this.settingsApiService
-      .list()
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (list) => {
-          this.formArray.clear();
-          let filteredList = list;
-          
-          // Filter based on includeKeys or excludeKeys
-          const includeKeys = this.includeKeys();
-          const excludeKeys = this.excludeKeys();
-          
-          if (includeKeys && includeKeys.length > 0) {
-            filteredList = list.filter(item => includeKeys.includes(item.key));
-          } else if (excludeKeys && excludeKeys.length > 0) {
-            filteredList = list.filter(item => !excludeKeys.includes(item.key));
-          }
-          
-          for (const item of filteredList) {
-            const form = this.getFormGroup(item);
-            this.formArray.push(form);
-          }
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
+    effect(() => {
+      const list = this.settings.value();
+      this.formArray.clear();
+      for (const item of list) {
+        const form = this.getFormGroup(item);
+        this.formArray.push(form);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private getFormGroup(data: ISetting): FormGroup<TInterfaceToForm<ISetting>> {
@@ -163,11 +152,6 @@ export class SettingsPageForm {
       value_type: new FormControl<ESettingValueType>(data.value_type),
       modified_at: new FormControl<string>({ value: data.modified_at, disabled: true }),
     });
-
-    if (data.key === ESettingKey.CRONTAB_EXPR) {
-      form.controls.value.addValidators([this.cronValidator]);
-    }
-
     return form;
   }
 
@@ -189,11 +173,21 @@ export class SettingsPageForm {
   }
 
   public onTestNotification(): void {
-    this.isLoading.set(true);
-    const url = this.formArray.value.find((item) => item.key === ESettingKey.NOTIFICATION_URL)
+    const values = this.getSettingsValues();
+    const title_template = values.find(
+      (item) => item.key == ESettingKey.NOTIFICATION_TITLE_TEMPLATE,
+    ).value as string;
+    const body_template = values.find((item) => item.key == ESettingKey.NOTIFICATION_BODY_TEMPLATE)
       .value as string;
+    const urls = values.find((item) => item.key == ESettingKey.NOTIFICATION_URLS).value as string;
+    const body: ITestNotificationRequestBody = {
+      title_template,
+      body_template,
+      urls,
+    };
+    this.isLoading.set(true);
     this.settingsApiService
-      .test_notification(url)
+      .test_notification(body)
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {
@@ -203,6 +197,13 @@ export class SettingsPageForm {
           this.toastService.error(error);
         },
       });
+  }
+
+  protected getSettingsValues(): ISettingUpdate[] {
+    return this.formArray.getRawValue().map((item) => ({
+      key: item.key,
+      value: item.value,
+    }));
   }
 
   public submit(): void {
@@ -217,10 +218,7 @@ export class SettingsPageForm {
       return;
     }
     this.formArray.markAsPristine();
-    const value = this.formArray.getRawValue().map((item) => ({
-      key: item.key,
-      value: item.value,
-    }));
-    this.OnSubmit.emit(value);
+    const values = this.getSettingsValues();
+    this.OnSubmit.emit(values);
   }
 }
