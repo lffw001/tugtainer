@@ -6,6 +6,7 @@
     "CONFIRM": "Confirm",
     "CANCEL": "Cancel",
     "CLOSE": "Close",
+    "GO_BACK": "Go back",
     "DELETE": "Delete",
     "ENABLED": "Enabled",
     "DISABLED": "Disabled",
@@ -58,7 +59,7 @@
     "NO_HOSTS_FOUND": "No hosts found",
     "TABLE": {
       "SEARCH_PLACEHOLDER": "ID, name, url",
-      "ADD": "Add host",
+      "ADD": "Add new",
       "NAME": "Name",
       "URL": "Agent address",
       "STATUS": "Status",
@@ -83,47 +84,67 @@
         "ENABLED": "Enabled",
         "PRUNE": "Prune",
         "PRUNE_HINT": "Enable auto-pruning of images after scheduled process.",
+        "PRUNE_ALL": "Prune all",
+        "PRUNE_ALL_HINT": "This toggle stands for --all flag of 'docker image prune' command.",
         "URL": "Agent address",
         "URL_PLACEHOLDER": "http://127.0.0.1:8001",
         "SECRET": "Agent secret",
         "TIMEOUT": "Agent timeout",
-        "TIMEOUT_HINT": "Timeout in seconds for typically fast agent requests. It does not affect potentially long requests such as container create or image pull."
+        "TIMEOUT_HINT": "Timeout in seconds for typically fast agent requests. It does not affect potentially long requests such as container create or image pull.",
+        "CONTAINER_HC_TIMEOUT": "Container healthcheck timeout",
+        "CONTAINER_HC_TIMEOUT_HINT": "Timeout in seconds for how long the app will wait for a healthcheck during an update before starting a rollback."
       }
     }
   },
   "CONTAINERS": {
-    "TABLE": {
-      "SEARCH_PLACEHOLDER": "Name or ID",
-      "CHECK_ALL": "Check all",
-      "CHECK_ALL_COMPLETED": "Check completed",
-      "HEADER_PROGRESS": {
-        "UPDATED": "Updated",
-        "AVAILABLE": "Available",
-        "ROLLED_BACK": "Rolled back",
-        "FAILED": "Failed"
-      },
-      "NAME": "Name",
-      "CONTAINER_ID": "ID",
-      "IMAGE": "Image",
-      "UPDATE_AVAILABLE": "Update available",
-      "STATUS": "Status",
-      "PORTS": "Ports",
-      "HEALTH": "Health",
-      "CHECK_ENABLED": "Check",
-      "CHECK_HINT": "Periodically check for a new image.",
-      "UPDATE_ENABLED": "Update",
-      "UPDATE_HINT": "Automatically update container when a new image is detected.",
-      "CHECKED_AT": "Last check",
-      "UPDATED_AT": "Last update",
-      "UPDATE": "Update",
-      "CHECK": "Check",
-      "MAIN_BTN_HINT": "If a container is a part of a compose project, all project's containers will be involved in the process."
+    "SEARCH_PLACEHOLDER": "Name or ID",
+    "ONLY_AVAILABLE": "Only available",
+    "CHECK_ALL": "Check all",
+    "CHECK_ALL_HOSTS": "Check all hosts",
+    "CHECK_ALL_COMPLETED": "Check completed",
+    "HEADER_PROGRESS": {
+      "UPDATED": "Updated",
+      "AVAILABLE": "Available",
+      "ROLLED_BACK": "Rolled back",
+      "FAILED": "Failed"
+    },
+    "NAME": "Name",
+    "CONTAINER_ID": "ID",
+    "IMAGE": "Image",
+    "UPDATE_AVAILABLE": "Update available",
+    "STATUS": "Status",
+    "PORTS": "Ports",
+    "HEALTH": "Health",
+    "CHECK_ENABLED": "Check",
+    "CHECK_HINT": "Periodically check for a new image.",
+    "UPDATE_ENABLED": "Update",
+    "UPDATE_HINT": "Automatically update container when a new image is detected.",
+    "CHECKED_AT": "Last check",
+    "UPDATED_AT": "Last update",
+    "UPDATE": "Update",
+    "UPDATE_DISABLED_HINTS": {
+      "PROTECTED": "The protected container cannot be updated from the app.\n",
+      "NOT_RUNNING": "The container must be in running state.\n"
+    },
+    "CHECK": "Check",
+    "MAIN_BTN_HINT": "If a container is a part of a compose project, all project's containers will be involved in the process.",
+    "PROTECTED": "Protected",
+    "PROTECTED_CONTAINER_HINT": "This container labeled with dev.quenary.tugtainer.protected and cannot be updated from the app.",
+    "GENERAL": {
+      "LABEL": "General"
+    },
+    "INSPECT": {
+      "LABEL": "Inspect",
+      "JSON": "JSON",
+      "TREE": "Tree"
     }
   },
   "IMAGES": {
     "TABLE": {
       "PRUNE": "Prune",
       "PRUNE_CONFIRM": "Do you want to prune images?",
+      "PRUNE_ALL": "Prune all",
+      "PRUNE_ALL_HINT": "This toggle stands for --all flag of 'docker image prune' command.",
       "PRUNE_RESULT": "Prune result",
       "SEARCH_PLACEHOLDER": "ID, repo, tags",
       "REPOSITORY": "Repository",
@@ -148,16 +169,27 @@
         "HINT": "Crontab expression for periodic checks e.g. \n'0 */1 * * *' for every hour\n\nClick for more info.",
         "LINK": "https://crontab.guru/"
       },
-      "NOTIFICATION_URL": {
-        "LABEL": "Notification URL",
-        "HINT": "URL for notifications via Apprise e.g. tgram://<token>/<chat_id>\n\nClick for more info.",
-        "LINK": "https://pypi.org/project/apprise/",
+      "NOTIFICATION_URLS": {
+        "LABEL": "Notification URLs",
+        "HINT": "URLs for notifications via Apprise e.g. tgram://<token>/<chat_id>\nYou can specify several, each on a new line.\n\nClick for more info.",
+        "LINK": "https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications",
         "TEST": "Send test notification"
       },
       "TIMEZONE": {
         "LABEL": "Timezone",
         "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
-      }
+      },
+      "NOTIFICATION_TITLE_TEMPLATE": {
+        "LABEL": "Notification title template",
+        "HINT": "Jinja2 template of notification title.\n\nClick for more info.",
+        "LINK": "https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications"
+      },
+      "NOTIFICATION_BODY_TEMPLATE": {
+        "LABEL": "Notification body template",
+        "HINT": "Jinja2 template of notification body.\n\nClick for more info.",
+        "LINK": "https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications"
+      },
+      "SEND_TEST_NOTIFICATION": "Send test notification"
     }
   }
 }
