@@ -7,6 +7,7 @@ from sqlalchemy import (
     Integer,
     String,
     text,
+    JSON
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base_model import BaseModel
@@ -22,10 +23,10 @@ class ContainersModel(BaseModel):
     __tablename__ = "containers"
 
     id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, index=True, nullable=False
+        Integer, primary_key=True, nullable=False
     )
     host_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("hosts.id"), index=True, nullable=False
+        Integer, ForeignKey("hosts.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(
         String, index=True, nullable=False
@@ -67,6 +68,10 @@ class ContainersModel(BaseModel):
         onupdate=now,
         default=now,
         nullable=False,
+    )
+    notified_available_digests: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
     )
 
     host: Mapped["HostsModel"] = relationship(

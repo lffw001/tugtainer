@@ -30,6 +30,12 @@ class HostsModel(BaseModel):
         default=False,
         server_default=text("FALSE"),
     )
+    prune_all: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("FALSE"),
+    )
     url: Mapped[str] = mapped_column(
         String,
         nullable=False,
@@ -39,6 +45,9 @@ class HostsModel(BaseModel):
     )
     timeout: Mapped[int] = mapped_column(
         Integer, nullable=False, default=5, server_default=text("5")
+    )
+    container_hc_timeout: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=60, server_default=text("60")
     )
 
     containers: Mapped[list["ContainersModel"]] = relationship(

@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.core import HostsManager
 from backend.core.auth.auth_provider_chore import is_authorized
+from backend.exception import TugAgentClientError
 from backend.schemas import (
     HostInfo,
     HostBase,
@@ -11,7 +12,6 @@ from backend.schemas import (
 from backend.db.session import get_async_session
 from backend.db.models import HostsModel
 from backend.api.util import get_host
-from aiohttp.client_exceptions import ClientResponseError
 
 router = APIRouter(
     prefix="/hosts",
@@ -125,13 +125,13 @@ async def get_status(
     response.headers["Expires"] = "0"
     host = await get_host(id, session)
     if not host.enabled:
-        HostStatusResponseBody(id=id)
+        return HostStatusResponseBody(id=id)
     client = HostsManager.get_host_client(host)
     try:
         _ = await client.public.health()
         _ = await client.public.access()
         return HostStatusResponseBody(id=id, ok=True)
-    except ClientResponseError as e:
+    except TugAgentClientError as e:
         return HostStatusResponseBody(
             id=id,
             ok=False,
@@ -141,5 +141,5 @@ async def get_status(
         return HostStatusResponseBody(
             id=id,
             ok=False,
-            err="Unknown error",
+            err=f"Unknown error\n{str(e)}",
         )
